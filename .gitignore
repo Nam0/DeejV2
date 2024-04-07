@@ -30,3 +30,14 @@
 *.exe
 *.out
 *.app
+
+#Shh Secret
+Readerpt2/
+.pio/
+.vscode/
+*.code-workspace
+platformio.ini
+
+#Allow Volume Changer
+#Probably Finished
+!VolumeChanger.exe 
