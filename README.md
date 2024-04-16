@@ -15,7 +15,7 @@ This project was inspired by [Omri Harel](https://github.com/omriharel/deej) all
     - Setup the Check Headset thing you see in the code, I might actually do this one because I have a magnet in my headset and a halleffect sensor in my headset holder and wires already hooked up just need to write the code to do it [This Guy](https://github.com/Belphemur/AudioEndPointLibrary/blob/master/DefSound/PolicyConfig.h) did the hard part
 
 # Construction
-![Constructed Picture](Imma add it in a bit)
+![Constructed Picture](https://github.com/Nam0/DeejV2/blob/main/Reader/STLS/Constructed.jpg?raw=true)
 - Print the STLS
 - Program the Arudinos
 - Solder it up
@@ -26,7 +26,7 @@ This project was inspired by [Omri Harel](https://github.com/omriharel/deej) all
 You can snake the cable in thru the right hole might need to make it bigger or use the left one.
 
 # Soldering Circuit Stuff
-![Circuit Picture](Imma add it in a bit)
+![Circuit Picture](https://github.com/Nam0/DeejV2/blob/main/Reader/STLS/Circuit.jpg?raw=true)
 
 - Connect it like this ^
 - Bridge the 5V's on the Pots together
