@@ -32,12 +32,14 @@
 *.app
 
 #Shh Secret
-Readerpt2/
+Readerpt2/Reader/x64
+Readerpt2/Reader/.vs
 .pio/
 .vscode/
 *.code-workspace
 platformio.ini
 
+
 #Allow Volume Changer
 #Probably Finished
-!VolumeChanger.exe 
+!Reader.exe
