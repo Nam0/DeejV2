@@ -808,7 +808,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
             stripWhitespace(incomingData);
             int values[5];
-            if (sscanf_s(incomingData, "%d|%d|%d|%d|%d", &values[0], &values[1], &values[2], &values[3], &values[4]) == 5) {
+            if (sscanf_s(incomingData, "V0:%d|V1:%d|V2:%d|V3:%d|V4:%d|", &values[0], &values[1], &values[2], &values[3], &values[4]) == 5) {
                 for (int i = 0; i < 5; i++) {
                     std::string key = std::to_string(i);
                     const char* value = sliderMappingArray[i].c_str();
@@ -825,7 +825,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                         }
 
                         std::wstring StringMappedValue = std::to_wstring(mappedValue);
-                        if ((std::string(value) != "Master" && std::string(value) != "unmapped") && abs(difference) > 3) {
+                        if (std::string(value) != "Master" && std::string(value) != "unmapped" ) {
                             std::string processNameStr = sliderMappingArray[i];
                             std::wstring processName(processNameStr.begin(), processNameStr.end());
                             DWORD processId = getProcessIdByName(processName.c_str());
@@ -834,22 +834,22 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                                 std::wstring message = L"Volume adjusted to mapped value for process: ";
                                 message += StringMappedValue;
                                 message += L".";
-                                appendToTextBox(message);
+                                //appendToTextBox(message);
                             }
                             else {
                                 appendToTextBox(L"Failed to find the target process.");
                             }
                         }
-                        else if (std::string(value) == "Master" && abs(difference) > 3) {
+                        else if (std::string(value) == "Master") {
                             changeSystemVolume(mappedValue);
                             std::wstring message = L"System Volume set to: ";
                             message += StringMappedValue;
                             message += L".";
                             appendToTextBox(message);
                         }
-                        else if (std::string(value) == "unmapped" && abs(difference) > 3) {
+                        else if (std::string(value) == "unmapped" ) {
                             changeGlobalVolume(mappedValue);
-                            memset(prevValues, 0, sizeof(prevValues));
+                            //memset(prevValues, 0, sizeof(prevValues));
                         }
                     }
 

@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <string.h>
 
 const uint8_t buttonPin = A7;
 const uint8_t NUM_SLIDERS = 5;
@@ -13,43 +12,66 @@ char serialBuffer[256];
 uint8_t bufferIndex = 0;
 
 unsigned long lastSliderCheckTime = 0;
-const unsigned long sliderCheckInterval = 10; // Interval in milliseconds
+const unsigned long sliderCheckInterval = 2; 
+const uint8_t NUM_SAMPLES = 3; 
+uint16_t avgSliderValues[NUM_SLIDERS];
 
-void setup() { 
+const uint16_t TOLERANCE = 1; 
+
+void setup() {
   for (uint8_t i = 0; i < NUM_SLIDERS; i++) {
     pinMode(analogInputs[i], INPUT);
   }
   pinMode(buttonPin, INPUT_PULLUP);
-  Serial.begin(9600); // USB Serial
-  Serial1.begin(9600); // Serial1 (RX/TX pins)
+  Serial.begin(9600); 
+  Serial1.begin(9600); 
 }
 
-void updateSliderValues() {
+void readSliderValues() {
   for (uint8_t i = 0; i < NUM_SLIDERS; i++) {
-     analogSliderValues[i] = analogRead(analogInputs[i]);
+    analogSliderValues[i] = analogRead(analogInputs[i]);
   }
 }
 
-bool areSliderValuesChanged() {
+void calculateMovingAverage() {
   for (uint8_t i = 0; i < NUM_SLIDERS; i++) {
-    if (analogSliderValues[i] != oldAnalogSliderValues[i]) {
-      return true; // Values changed
+    uint32_t sum = 0;
+    for (uint8_t j = 0; j < NUM_SAMPLES; j++) {
+      sum += analogRead(analogInputs[i]);
+      delayMicroseconds(100); 
+    }
+    avgSliderValues[i] = sum / NUM_SAMPLES;
+  }
+}
+
+void applyWeightedAverage() {
+  for (uint8_t i = 0; i < NUM_SLIDERS; i++) {
+    avgSliderValues[i] = (avgSliderValues[i] + oldAnalogSliderValues[i]) / 2;
+  }
+}
+
+bool hasSliderValuesChanged() {
+  for (uint8_t i = 0; i < NUM_SLIDERS; i++) {
+    if (abs(avgSliderValues[i] - oldAnalogSliderValues[i]) > TOLERANCE) {
+      return true; 
     }
   }
-  return false; // Values are the same
+  return false;
 }
 
-void sendSliderValues() {
-  String builtString = String("");
+bool isWithinTolerance(uint16_t value1, uint16_t value2) {
+  return (abs(value1 - value2) <= TOLERANCE);
+}
 
+void sendChangedSliderValues() {
+  String builtString = "";
   for (uint8_t i = 0; i < NUM_SLIDERS; i++) {
-    builtString += String((uint16_t)analogSliderValues[i]);
-
+    builtString += "V" + String(i) + ":" + String((uint16_t)avgSliderValues[i]);
     if (i < NUM_SLIDERS - 1) {
-      builtString += String("|");
+      builtString += "|"; // Add separator unless it's the last value
     }
   }
-  
+  builtString += "|"; // Add final separator after the last value
   Serial.println(builtString);
 }
 
@@ -60,11 +82,11 @@ void processSerialCommand(const char* command) {
   Serial.println();
 }
 
-void sendAck() {
-  Serial1.println("ACK"); 
+void sendAcknowledge() {
+  Serial1.println("ACK");
 }
 
-void forwardSerialToSerial1(const char* message) {
+void forwardSerialData(const char* message) {
   if (strstr(message, "Setup") != nullptr) {
     delay(10);
     Serial1.println(message);
@@ -80,15 +102,15 @@ void readSerialData() {
         bufferIndex = sizeof(serialBuffer) - 1;
       }
     } else {
-      serialBuffer[bufferIndex] = '\0'; 
+      serialBuffer[bufferIndex] = '\0';
       processSerialCommand(serialBuffer);
-      bufferIndex = 0; 
-      sendAck();
+      bufferIndex = 0;
+      sendAcknowledge();
     }
   }
 }
 
-void Funsies() {
+void handleSerialInput() {
   while (Serial.available() > 0) {
     char incomingByte = Serial.read();
     if (incomingByte != '\n') {
@@ -97,20 +119,25 @@ void Funsies() {
         bufferIndex = sizeof(serialBuffer) - 1;
       }
     } else {
-      serialBuffer[bufferIndex] = '\0'; 
-      forwardSerialToSerial1(serialBuffer);
-      bufferIndex = 0; 
+      serialBuffer[bufferIndex] = '\0';
+      forwardSerialData(serialBuffer);
+      bufferIndex = 0;
     }
   }
 }
 
 void loop() {
-  updateSliderValues();
-  if (areSliderValuesChanged()) {
-    sendSliderValues();
-    memcpy(oldAnalogSliderValues, analogSliderValues, sizeof(analogSliderValues));
+  unsigned long currentMillis = millis();
+  if (currentMillis - lastSliderCheckTime >= sliderCheckInterval) {
+    readSliderValues();
+    calculateMovingAverage();
+    applyWeightedAverage();
+    if (hasSliderValuesChanged()) {
+      sendChangedSliderValues();
+      memcpy(oldAnalogSliderValues, avgSliderValues, sizeof(avgSliderValues));
+    }
+    lastSliderCheckTime = currentMillis;
   }
-  readSerialData(); 
-  Funsies();
-  delay(10);
+  readSerialData();
+  handleSerialInput();
 }
