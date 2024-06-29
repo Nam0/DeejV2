@@ -27,3 +27,4 @@
 #include <shellapi.h>
 #include <string>
 #include <locale>
+#include <numeric>

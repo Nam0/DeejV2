@@ -87,9 +87,31 @@ void sendAcknowledge() {
 }
 
 void forwardSerialData(const char* message) {
-  if (strstr(message, "Setup") != nullptr) {
+  if (strstr(message, "Setup:") != nullptr) {
+    char* ptr = strstr(message, "Setup:");
+    ptr += strlen("Setup:");
+    int checksum = atoi(ptr);
+    if (checksum > 0) {
+      ptr = strchr(ptr, ':');
+      if (ptr != nullptr) {
+        ptr++;
+        int calculatedChecksum = 0;
+        for (size_t i = 0; ptr[i] && ptr[i] != '\n'; i++) {
+          calculatedChecksum += static_cast<int>(ptr[i]);
+        }
+        if (calculatedChecksum == checksum) {
+          Serial.println("ACK1");
+          Serial1.println(message);
+        } else {
+          Serial.println("NACK1");
+        }
+      }
+    } else {
+      Serial.println("NACK1");
+    }
+  } else {
     delay(10);
-    Serial1.println(message);
+    
   }
 }
 

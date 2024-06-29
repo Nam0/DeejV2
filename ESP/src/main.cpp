@@ -124,46 +124,56 @@ void setup() {
 void loop() {
     if (Serial.available() > 0) {
         String message = Serial.readStringUntil('\n');
-
+        // Example: SETUP:4082:SPOTIFY,DISCORD,MIXER,HOLD_MIXER,PEEEEEE,POOOO,7,8,9,10,11,12
         if (message.startsWith("Setup:")) {
-            setupReceived = true;
-            message.remove(0, 6); // Remove "Setup:"
+            int colonIndex = message.indexOf(':');
+            if (colonIndex != -1) {
+                int checksum = message.substring(colonIndex + 1).toInt();
+                String buttonValues = message.substring(message.indexOf(':', colonIndex + 1) + 1);
+                buttonValues.trim();
+                int calculatedChecksum = 0;
 
-            while (message.length() > 0) {
-                int commaIndex = message.indexOf(',');
+                for (size_t i = 0; i < buttonValues.length(); i++) {
+                    calculatedChecksum += static_cast<int>(buttonValues[i]);
+                }
+                if (calculatedChecksum == checksum) {
+                    Serial.println("ACK2");
 
-                if (commaIndex != -1) {
-                    String value = message.substring(0, commaIndex);
+                    buttonLabels.clear(); 
 
-                    buttonLabels.push_back(value);
-                    message.remove(0, commaIndex + 1);
+                    while (buttonValues.length() > 0) {
+                        int commaIndex = buttonValues.indexOf(',');
+                        if (commaIndex != -1) {
+                            String value = buttonValues.substring(0, commaIndex);
+                            buttonLabels.push_back(value);
+                            buttonValues.remove(0, commaIndex + 1);
+                        } else {
+                            buttonLabels.push_back(buttonValues);
+                            buttonValues = "";
+                        }
+                    }
+
+                    if (SD.begin(5)) {
+                        File labelsFile = SD.open(labelFilePath, FILE_WRITE);
+                        if (labelsFile) {
+                            for (size_t i = 0; i < buttonLabels.size(); i++) {
+                                labelsFile.println(buttonLabels[i]);
+                            }
+                            labelsFile.close();
+                        } else {
+                            Serial.println("Warn:Failed to open Labels file for writing");
+                        }
+                        mainscreen();
+                    } else {
+                        Serial.println("Warn:SD card not detected, cannot save labels.");
+                    }
                 } else {
-                    buttonLabels.push_back(message);
-                    message = "";
+                    Serial.println("NACK2");
                 }
-            }
-        }
-    }
-
-    if (setupReceived) {
-        if (SD.begin(5)) {
-            File labelsFile = SD.open(labelFilePath, FILE_WRITE);
-            if (labelsFile) {
-                for (size_t i = 0; i < buttonLabels.size(); i++) {
-                    labelsFile.println(buttonLabels[i]);
-                }
-                labelsFile.close();
             } else {
-                Serial.println("Failed to open Labels file for writing");
+                Serial.println("NACK3");
             }
-
-            mainscreen();
-        } else {
-            Serial.println("SD card not detected, cannot save labels.");
         }
-
-        setupReceived = false;
-        buttonLabels.clear();
     }
 
     display_update();

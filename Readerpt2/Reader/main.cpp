@@ -454,19 +454,28 @@ void readIniFile(const std::string& filePath) {
     }
 }
 
+int calculateChecksum(const std::string& message) {
+    int sum = 0;
+    for (char c : message) {
+        sum += static_cast<int>(c);
+    }
+    return sum;
+}
+
 void updateButtons(HANDLE hSerial) {
     readIniFile("config.ini");
-    std::string setupMessage = "Setup:";
-    for (int i = 0; i <= 12; ++i) {
-        if (i < buttonsArray.size()) {
-            setupMessage += buttonsArray[i];
-            setupMessage += ",";
-        }
+    std::string buttonsMessage;
+    for (const auto& button : buttonsArray) {
+        buttonsMessage += button + ",";
     }
-    if (!setupMessage.empty()) {
-        setupMessage.pop_back();
+    if (!buttonsMessage.empty()) {
+        buttonsMessage.pop_back(); 
     }
-    setupMessage += "\n";
+
+    std::string setupPrefix = "Setup:";
+    std::string completeMessage = buttonsMessage;
+    int checksum = calculateChecksum(completeMessage);
+    std::string setupMessage = setupPrefix + std::to_string(checksum) + ":" + buttonsMessage + "\n";
 
     DWORD bytesWritten;
     if (!WriteFile(hSerial, setupMessage.c_str(), static_cast<DWORD>(setupMessage.length()), &bytesWritten, NULL)) {
